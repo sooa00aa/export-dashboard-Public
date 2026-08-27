@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한국 수출 10일 잠정치</title>
+<style>
+  :root{
+    --bg:#0B0E14; --surface:#12161F; --surface-2:#181E2A;
+    --border:#232B3A; --border-soft:#1B2230;
+    --text:#E7ECF3; --text-muted:#8A95AB; --text-dim:#5B6478;
+    --blue:#5B9FEF; --blue-dim:#182A44;
+    --amber:#F2B84B; --amber-dim:#3A2E14;
+    --pos:#34D399; --pos-dim:#123227;
+    --neg:#F87171; --neg-dim:#3A1A1A;
+    --neutral:#64748B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+    font-size:14px;line-height:1.5;padding:22px 20px 60px;max-width:1220px;margin:0 auto;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;}
+  h1{font-size:22px;font-weight:700;margin:0 0 6px;display:flex;align-items:center;gap:8px;}
+  .metaline{color:var(--text-dim);font-size:12px;margin-bottom:18px;}
+  .metaline b{color:var(--text-muted);font-weight:600;}
+
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:22px;}
+  .kpi{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:13px 14px;}
+  .kpi .label{font-size:11px;color:var(--text-dim);margin-bottom:8px;line-height:1.4;}
+  .kpi .value{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text);}
+  .kpi .yoy{font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:5px;}
+  .kpi .yoy.pos{color:var(--pos);} .kpi .yoy.neg{color:var(--neg);}
+
+  .insight-box{border:1px solid var(--border);background:var(--surface);border-radius:12px;
+    padding:18px 20px;margin-bottom:22px;}
+  .insight-box h3{margin:0 0 12px;font-size:14px;}
+  .insight-item{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--border-soft);font-size:12.5px;color:var(--text-muted);}
+  .insight-item:first-of-type{border-top:none;}
+  .insight-item .tag{flex:0 0 auto;font-size:10.5px;font-weight:700;color:var(--amber);
+    background:var(--amber-dim);border-radius:5px;padding:2px 7px;height:fit-content;white-space:nowrap;}
+  .insight-item b{color:var(--text);}
+
+  .board-head h2{font-size:15px;margin:0 0 4px;}
+  .board-legend{font-size:11px;color:var(--text-dim);margin-bottom:14px;}
+  .board-legend span{margin-right:14px;display:inline-flex;align-items:center;gap:4px;}
+  .board-legend .d{width:6px;height:6px;border-radius:50%;display:inline-block;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{text-align:right;color:var(--text-dim);font-weight:600;font-size:10.5px;
+    text-transform:uppercase;padding:0 8px 8px;border-bottom:1px solid var(--border);}
+  thead th:first-child{text-align:left;}
+  tbody tr{border-bottom:1px solid var(--border-soft);}
+  tbody tr:hover{background:var(--surface);}
+  tbody td{padding:10px 8px;text-align:right;vertical-align:middle;}
+  tbody td:first-child{text-align:left;}
+  .item-name{font-weight:700;color:var(--text);}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:999px;white-space:nowrap;}
+  .badge .d{width:6px;height:6px;border-radius:50%;flex:0 0 auto;}
+  .badge.accel{background:var(--pos-dim);color:var(--pos);} .badge.accel .d{background:var(--pos);}
+  .badge.decel{background:var(--amber-dim);color:var(--amber);} .badge.decel .d{background:var(--amber);}
+  .badge.improve{background:var(--blue-dim);color:var(--blue);} .badge.improve .d{background:var(--blue);}
+  .badge.worsen{background:var(--neg-dim);color:var(--neg);} .badge.worsen .d{background:var(--neg);}
+  .pct.pos{color:var(--pos);font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .pct.neg{color:var(--neg);font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .amt{font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+  .na{color:var(--text-dim);}
+  .spark{vertical-align:middle;}
+
+  .heat-wrap{overflow-x:auto;margin-top:30px;}
+  .heat-title{font-size:15px;margin:0 0 4px;}
+  .heat-sub{font-size:11px;color:var(--text-dim);margin-bottom:14px;}
+  table.heatmap{border-collapse:collapse;font-size:10px;}
+  table.heatmap th{color:var(--text-dim);font-weight:500;padding:3px 4px;text-align:center;white-space:nowrap;}
+  table.heatmap td{width:26px;height:22px;text-align:center;color:#0B0E14;font-family:'JetBrains Mono',monospace;font-size:9px;}
+  table.heatmap td.rowlabel{color:var(--text-muted);text-align:right;padding-right:8px;width:auto;font-size:11px;}
+
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border-soft);color:var(--text-dim);font-size:11px;}
+
+  @media (max-width:900px){ .kpis{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:640px){
+    table:not(.heatmap),thead,tbody,th,td,tr{display:block;}
+    thead{display:none;}
+    tbody tr{padding:12px 0;}
+    tbody td{text-align:left;padding:3px 0;}
+    tbody td::before{content:attr(data-label);display:inline-block;width:100px;color:var(--text-dim);font-size:10.5px;}
+  }
+</style>
+</head>
+<body>
+
+<h1>🚢 한국 수출 10일 잠정치</h1>
+<div class="metaline" id="metaline">관세청 10일 단위 잠정치 · 실제 API 데이터 기반 자동 생성</div>
+
+<div class="kpis" id="kpis"></div>
+<div class="insight-box"><h3>💡 핵심 인사이트</h3><div id="insights"></div></div>
+
+<div class="board-head"><h2>시그널 보드 — 품목별 YoY</h2></div>
+<div class="board-legend">
+  <span><span class="d" style="background:var(--pos)"></span>가속</span>
+  <span><span class="d" style="background:var(--amber)"></span>둔화</span>
+  <span><span class="d" style="background:var(--blue)"></span>낙폭축소</span>
+  <span><span class="d" style="background:var(--neg)"></span>악화</span>
+</div>
+<table>
+  <thead><tr>
+    <th>품목</th><th>시그널</th><th>최신구간 YoY</th><th>3개월 추세</th>
+    <th>모멘텀(pp)</th><th>당월누적 YoY</th><th>TTM YoY</th><th>TTM(억$)</th>
+  </tr></thead>
+  <tbody id="tbl-signal"></tbody>
+</table>
+
+<div class="heat-wrap">
+  <div class="heat-title">품목 × 시간 히트맵 — 최근 36구간(12개월)</div>
+  <div class="heat-sub">칸 하나 = 10일 구간의 YoY. 빨강=마이너스, 초록=플러스, 짙을수록 큼</div>
+  <table class="heatmap" id="heatmap"></table>
+</div>
+
+<footer id="footer">데이터 출처: 관세청 수출입 현황(10일 잠정치) Open API · 투자 참고용이며 투자 조언이 아닙니다</footer>
+
+<script>
+const DATA = {"meta": {"latest_label": "2026-08 (01~20)", "latest_year": 2026, "latest_month": 8, "generated": "2026-08-27"}, "items": {"컴퓨터주변기기": {"latest_amt": 16.91, "recent_yoy": 302.0, "cum_amt": 22.78, "cum_yoy": 242.1, "trend9": [195.0, 259.5, 309.9, 270.6, 208.0, 252.4, 483.2, 139.5, 302.0], "momentum": 64.5, "ttm_amt": 364.2, "ttm_yoy": 136.0}, "석유제품": {"latest_amt": 22.41, "recent_yoy": 49.2, "cum_amt": 42.39, "cum_yoy": 56.4, "trend9": [37.8, 62.0, 11.1, 66.6, 23.7, 49.8, 36.5, 65.3, 49.2], "momentum": 3.6, "ttm_amt": 570.8, "ttm_yoy": 25.3}, "총계": {"latest_amt": 339.21, "recent_yoy": 63.5, "cum_amt": 552.07, "cum_yoy": 56.0, "trend9": [38.6, 85.0, 43.0, 89.9, 53.9, 50.7, 78.4, 45.3, 63.5], "momentum": -2.4, "ttm_amt": 9288.2, "ttm_yoy": 34.8}, "정밀기기": {"latest_amt": 3.18, "recent_yoy": 5.9, "cum_amt": 5.25, "cum_yoy": 0.5, "trend9": [-10.4, 37.0, -13.5, 18.9, 13.1, -3.8, 21.6, -6.9, 5.9], "momentum": -2.5, "ttm_amt": 111.4, "ttm_yoy": 1.5}, "반도체": {"latest_amt": 160.8, "recent_yoy": 233.9, "cum_amt": 260.32, "cum_yoy": 198.8, "trend9": [130.1, 205.8, 176.2, 208.9, 193.1, 169.0, 171.4, 155.4, 233.9], "momentum": -3.5, "ttm_amt": 3379.9, "ttm_yoy": 115.8}, "총계(반도체 제외)": {"latest_amt": 178.41, "recent_yoy": 12.0, "cum_amt": 291.75, "cum_yoy": 9.3, "trend9": [5.9, 48.0, 4.3, 39.5, 19.6, 12.7, 41.4, 5.4, 12.0], "momentum": -4.4, "ttm_amt": 5908.3, "ttm_yoy": 11.0}, "자동차부품": {"latest_amt": 5.74, "recent_yoy": -11.1, "cum_amt": 7.97, "cum_yoy": -19.9, "trend9": [-25.0, 17.0, -27.2, 11.3, -11.8, -6.5, 22.3, -36.3, -11.1], "momentum": -6.0, "ttm_amt": 192.4, "ttm_yoy": -8.5}, "철강제품": {"latest_amt": 14.91, "recent_yoy": 13.2, "cum_amt": 23.92, "cum_yoy": 9.7, "trend9": [-3.0, 38.5, -3.1, 28.2, 12.9, 9.0, 11.5, 4.3, 13.2], "momentum": -7.0, "ttm_amt": 480.2, "ttm_yoy": 1.5}, "승용차": {"latest_amt": 13.4, "recent_yoy": -26.4, "cum_amt": 15.21, "cum_yoy": -45.1, "trend9": [-5.0, 25.1, -10.4, 12.2, 5.5, -26.7, 45.7, -80.9, -26.4], "momentum": -17.5, "ttm_amt": 668.5, "ttm_yoy": -2.2}, "가전제품": {"latest_amt": 1.94, "recent_yoy": 0.2, "cum_amt": 3.07, "cum_yoy": -3.4, "trend9": [4.5, 32.6, 5.0, 30.9, 13.7, -2.0, -9.6, -9.0, 0.2], "momentum": -20.3, "ttm_amt": 68.8, "ttm_yoy": -5.3}, "무선통신기기": {"latest_amt": 5.7, "recent_yoy": 19.3, "cum_amt": 10.4, "cum_yoy": 4.5, "trend9": [2.7, 52.1, 41.8, 100.4, 92.4, 38.7, 29.8, -9.1, 19.3], "momentum": -63.8, "ttm_amt": 197.0, "ttm_yoy": 17.7}, "선박": {"latest_amt": 4.43, "recent_yoy": -62.7, "cum_amt": 9.14, "cum_yoy": -60.5, "trend9": [24.2, 51.7, 24.2, -32.8, 75.3, 64.1, -2.8, -58.2, -62.7], "momentum": -76.8, "ttm_amt": 326.1, "ttm_yoy": 15.4}, "무역수지": {"latest_amt": 121.77, "recent_yoy": 526.9, "cum_amt": 139.75, "cum_yoy": 1738.6, "trend9": [115.7, -385.6, 178.5, 187.5, -1136.8, 457.0, 198.7, -252.1, 526.9], "momentum": 322.0, "ttm_amt": 2244.8, "ttm_yoy": 265.1}, "수입": {"latest_amt": 217.44, "recent_yoy": 15.6, "cum_amt": 412.31, "cum_yoy": 19.0, "trend9": [8.2, 35.4, 11.8, 46.9, 17.4, 23.1, 39.2, 23.1, 15.6], "momentum": -3.2, "ttm_amt": 7043.4, "ttm_yoy": 12.2}}, "heatmap": {"labels": ["2025-08 (01~31)", "2025-09 (01~10)", "2025-09 (01~20)", "2025-09 (01~30)", "2025-10 (01~10)", "2025-10 (01~20)", "2025-10 (01~31)", "2025-11 (01~10)", "2025-11 (01~20)", "2025-11 (01~30)", "2025-12 (01~10)", "2025-12 (01~20)", "2025-12 (01~31)", "2026-01 (01~10)", "2026-01 (01~20)", "2026-01 (01~31)", "2026-02 (01~10)", "2026-02 (01~20)", "2026-02 (01~28)", "2026-03 (01~10)", "2026-03 (01~20)", "2026-03 (01~31)", "2026-04 (01~10)", "2026-04 (01~20)", "2026-04 (01~30)", "2026-05 (01~10)", "2026-05 (01~20)", "2026-05 (01~31)", "2026-06 (01~10)", "2026-06 (01~20)", "2026-06 (01~30)", "2026-07 (01~10)", "2026-07 (01~20)", "2026-07 (01~31)", "2026-08 (01~10)", "2026-08 (01~20)"], "matrix": {"컴퓨터주변기기": [-27.0, 4.3, 7.3, -30.1, -17.3, -3.7, 14.3, 22.4, 11.9, -9.8, 65.4, 39.5, 17.5, 26.0, 52.0, 121.8, 90.2, 157.6, 268.0, 370.6, 227.9, 84.8, 134.8, 667.7, 425.2, 164.9, 395.4, 195.0, 259.5, 309.9, 270.6, 208.0, 252.4, 483.2, 139.5, 302.0], "석유제품": [-5.8, -19.9, 15.7, 23.8, 5.7, 17.4, 15.3, -13.0, -23.7, 12.1, 21.2, -22.9, 21.2, 15.5, 21.2, -5.6, 43.8, 1.5, -21.3, 97.7, 92.3, 79.3, 34.9, 60.5, 24.7, 4.7, 82.3, 37.8, 62.0, 11.1, 66.6, 23.7, 49.8, 36.5, 65.3, 49.2], "총계": [-7.2, 3.7, 23.8, 11.5, -15.5, -1.9, 19.0, 6.2, 9.4, 7.7, 17.1, -1.4, 26.0, -2.2, 32.2, 68.1, 44.5, 9.2, 40.4, 59.6, 49.1, 46.1, 36.2, 64.6, 45.9, 39.9, 80.7, 38.6, 85.0, 43.0, 89.9, 53.9, 50.7, 78.4, 45.3, 63.5], "정밀기기": [-12.3, 9.8, 14.3, 2.5, -42.2, -7.2, -0.9, -5.4, 10.1, -8.1, 22.0, -2.2, 16.9, -12.3, 16.0, 51.4, 8.5, -38.5, -13.2, 23.6, -5.8, 3.5, -2.0, -9.0, 2.1, -14.0, 12.3, -10.4, 37.0, -13.5, 18.9, 13.1, -3.8, 21.6, -6.9, 5.9], "반도체": [23.5, 28.4, 25.9, 16.2, 46.9, -0.1, 31.5, 17.6, 33.0, 58.0, 45.9, 38.6, 44.7, 45.6, 95.1, 154.5, 137.6, 131.3, 203.7, 175.9, 156.3, 133.7, 152.5, 215.6, 158.0, 149.8, 248.6, 130.1, 205.8, 176.2, 208.9, 193.1, 169.0, 171.4, 155.4, 233.9], "총계(반도체 제외)": [-15.7, -2.0, 23.1, 9.7, -31.1, -2.5, 15.4, 3.0, 2.9, -7.7, 9.6, -11.5, 17.8, -14.1, 16.6, 43.3, 22.5, -17.2, 0.6, 30.6, 22.3, 13.6, 10.0, 26.5, 14.5, -0.0, 38.4, 5.9, 48.0, 4.3, 39.5, 19.6, 12.7, 41.4, 5.4, 12.0], "자동차부품": [-21.4, 1.9, 14.3, 0.4, -49.1, -13.8, -7.5, -7.2, -8.8, -22.3, 0.8, -10.2, -1.7, -19.5, -4.7, 27.0, 13.7, -41.1, -32.1, 12.0, -7.0, -16.1, -7.7, -11.0, -8.1, -4.3, 10.5, -25.0, 17.0, -27.2, 11.3, -11.8, -6.5, 22.3, -36.3, -11.1], "철강제품": [-21.2, -2.8, 16.9, -3.0, -32.1, -6.8, -8.4, -14.5, -5.8, -11.6, 1.9, -14.8, 11.0, -18.6, 21.1, 23.3, 29.5, -15.2, -11.2, 30.6, 16.4, -16.1, 9.6, 5.2, -11.3, -2.1, 23.6, -3.0, 38.5, -3.1, 28.2, 12.9, 9.0, 11.5, 4.3, 13.2], "승용차": [-6.0, -1.9, 34.0, 12.8, -51.9, -4.8, 1.6, 16.2, 27.8, -4.8, -5.9, -17.1, 10.9, -24.8, -0.8, 78.3, -2.7, -41.6, -17.1, 13.7, 9.3, -10.9, -6.7, -21.6, 2.4, -26.1, -1.1, -5.0, 25.1, -10.4, 12.2, 5.5, -26.7, 45.7, -80.9, -26.4], "가전제품": [-31.1, -10.7, 15.9, 11.6, -52.5, -0.7, -14.8, -8.5, -1.5, -26.0, -6.3, -23.3, 21.9, -50.1, -13.0, 76.8, 35.9, -28.9, -28.6, 14.2, 10.3, 4.9, -25.4, -4.0, -20.7, -9.8, -4.5, 4.5, 32.6, 5.0, 30.9, 13.7, -2.0, -9.6, -9.0, 0.2], "무선통신기기": [-10.0, -5.8, 13.3, 9.7, -28.9, -7.3, 7.0, -21.2, -8.6, 17.6, 25.1, 10.7, 46.1, 34.2, 59.5, 188.8, 27.8, 17.1, 22.0, 0.5, 24.2, 13.3, 15.9, 7.5, -6.8, 6.4, 15.5, 2.7, 52.1, 41.8, 100.4, 92.4, 38.7, 29.8, -9.1, 19.3], "선박": [-29.3, 54.7, 34.3, 5.1, -13.1, 61.1, 417.9, 9.0, -4.6, -56.5, -48.1, 14.6, 28.5, -13.1, -28.1, 33.7, -28.8, 413.8, 103.6, -61.9, 66.9, 52.2, 26.7, 162.5, 19.4, -58.6, 75.6, 24.2, 51.7, 24.2, -32.8, 75.3, 64.1, -2.8, -58.2, -62.7]}}, "order": ["컴퓨터주변기기", "석유제품", "총계", "정밀기기", "반도체", "총계(반도체 제외)", "자동차부품", "철강제품", "승용차", "가전제품", "무선통신기기", "선박"]};
+
+function fmtPct(v){
+  if(v==null) return '<span class="na">—</span>';
+  const s=(v>=0?"+":"")+v.toFixed(1)+"%";
+  return `<span class="pct ${v>=0?"pos":"neg"}">${s}</span>`;
+}
+function fmtAmt(v){
+  if(v==null) return '<span class="na">—</span>';
+  return `<span class="amt">${v.toLocaleString(undefined,{maximumFractionDigits:1})}억$</span>`;
+}
+function signal(recent, cum){
+  if(recent==null||cum==null) return {c:"decel",l:"데이터부족"};
+  if(recent>=0 && cum>=0) return recent>=cum ? {c:"accel",l:"가속"} : {c:"decel",l:"둔화"};
+  if(recent<0 && cum<0) return recent>cum ? {c:"improve",l:"낙폭축소"} : {c:"worsen",l:"악화"};
+  if(recent>=0 && cum<0) return {c:"improve",l:"플러스전환"};
+  return {c:"worsen",l:"마이너스전환"};
+}
+function sparkSvg(trend){
+  const vals = trend.filter(v=>v!=null);
+  if(vals.length<2) return '<span class="na">—</span>';
+  const w=70,h=22,pad=2;
+  const min=Math.min(...vals), max=Math.max(...vals);
+  const range = (max-min)||1;
+  const step = (w-pad*2)/(trend.length-1);
+  let pts=[]; trend.forEach((v,i)=>{ if(v==null) return; const x=pad+i*step; const y=h-pad-((v-min)/range)*(h-pad*2); pts.push(`${x.toFixed(1)},${y.toFixed(1)}`); });
+  const last = vals[vals.length-1];
+  const color = last>=0 ? "#34D399" : "#F87171";
+  return `<svg class="spark" width="${w}" height="${h}"><polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>`;
+}
+function heatColor(v){
+  if(v==null) return "#181E2A";
+  const clamp = Math.max(-100, Math.min(100, v));
+  if(clamp>=0){
+    const t = clamp/100;
+    const l = 55 - t*25;
+    return `hsl(158, 55%, ${l}%)`;
+  } else {
+    const t = -clamp/100;
+    const l = 60 - t*20;
+    return `hsl(0, 65%, ${l}%)`;
+  }
+}
+
+// ---- KPI cards ----
+const items = DATA.items;
+const kpiDefs = [
+  {key:"총계", label:"수출 (구간)", field:"latest_amt", yoyField:"recent_yoy"},
+  {key:"총계", label:"수출 · 당월누적", field:"cum_amt", yoyField:"cum_yoy"},
+  {key:"반도체", label:"반도체 (구간)", field:"latest_amt", yoyField:"recent_yoy"},
+  {key:"총계(반도체 제외)", label:"반도체 제외 (구간)", field:"latest_amt", yoyField:"recent_yoy"},
+  {key:"수입", label:"수입 (구간)", field:"latest_amt", yoyField:"recent_yoy"},
+  {key:"무역수지", label:"무역수지 (구간)", field:"latest_amt", yoyField:null},
+];
+document.getElementById("kpis").innerHTML = kpiDefs.map(d=>{
+  const it = items[d.key] || {};
+  const val = it[d.field];
+  const yoyV = d.yoyField ? it[d.yoyField] : null;
+  return `<div class="kpi">
+    <div class="label">${d.label}</div>
+    <div class="value">${val!=null ? val.toLocaleString(undefined,{maximumFractionDigits:1})+"억$" : "—"}</div>
+    <div class="yoy ${yoyV==null?'':(yoyV>=0?'pos':'neg')}">${d.yoyField ? (yoyV!=null ? "YoY "+(yoyV>=0?"+":"")+yoyV.toFixed(1)+"%" : "—") : ""}</div>
+  </div>`;
+}).join("");
+
+document.getElementById("metaline").innerHTML =
+  `관세청 10일 단위 잠정치 · 최신구간 <b>${DATA.meta.latest_label}</b> · 생성 ${DATA.meta.generated}`;
+
+// ---- Insights (자동 생성) ----
+const order = DATA.order;
+function insightRank(field){
+  return order
+    .filter(name=>items[name] && items[name][field]!=null)
+    .map(name=>({name, v:items[name][field]}))
+    .sort((a,b)=>b.v-a.v);
+}
+const byMomentum = insightRank("momentum");
+const insights = [];
+if(byMomentum.length){
+  const top = byMomentum[0], bottom = byMomentum[byMomentum.length-1];
+  insights.push({tag:"가속", text:`<b>${top.name}</b>이 가장 강하게 가속 중입니다 (모멘텀 ${top.v>=0?"+":""}${top.v.toFixed(1)}pp).`});
+  insights.push({tag:"경계", text:`<b>${bottom.name}</b>은 최근 3구간 대비 직전 3구간에서 가장 둔화됐습니다 (모멘텀 ${bottom.v>=0?"+":""}${bottom.v.toFixed(1)}pp).`});
+}
+const semi = items["반도체"], exSemi = items["총계(반도체 제외)"];
+if(semi && exSemi && semi.recent_yoy!=null && exSemi.recent_yoy!=null){
+  insights.push({tag:"쏠림", text:`반도체 최신구간 YoY <b>${semi.recent_yoy>=0?"+":""}${semi.recent_yoy.toFixed(1)}%</b> vs 반도체 제외 <b>${exSemi.recent_yoy>=0?"+":""}${exSemi.recent_yoy.toFixed(1)}%</b> — 격차가 ${Math.abs(semi.recent_yoy-exSemi.recent_yoy)>50?"크게 벌어져 있어 쏠림이 뚜렷합니다.":"크지 않아 반도체 외 품목도 견조합니다."}`});
+}
+document.getElementById("insights").innerHTML = insights.map(i=>
+  `<div class="insight-item"><span class="tag">${i.tag}</span><div>${i.text}</div></div>`
+).join("") || '<div class="insight-item">데이터가 더 쌓이면 인사이트가 채워집니다.</div>';
+
+// ---- Signal board ----
+document.getElementById("tbl-signal").innerHTML = order.map(name=>{
+  const it = items[name] || {};
+  const sig = signal(it.recent_yoy, it.cum_yoy);
+  return `<tr>
+    <td data-label="품목"><span class="item-name">${name}</span></td>
+    <td data-label="시그널"><span class="badge ${sig.c}"><span class="d"></span>${sig.l}</span></td>
+    <td data-label="최신구간 YoY">${fmtPct(it.recent_yoy)}</td>
+    <td data-label="3개월 추세">${sparkSvg(it.trend9||[])}</td>
+    <td data-label="모멘텀(pp)">${it.momentum!=null ? (it.momentum>=0?"+":"")+it.momentum.toFixed(1) : '<span class="na">—</span>'}</td>
+    <td data-label="당월누적 YoY">${fmtPct(it.cum_yoy)}</td>
+    <td data-label="TTM YoY">${fmtPct(it.ttm_yoy)}</td>
+    <td data-label="TTM(억$)">${fmtAmt(it.ttm_amt)}</td>
+  </tr>`;
+}).join("");
+
+// ---- Heatmap ----
+const hm = DATA.heatmap;
+if(hm && hm.labels && hm.labels.length){
+  let thead = "<tr><td></td>" + hm.labels.map(l=>`<th>${l.split(' ')[1]||l}</th>`).join("") + "</tr>";
+  let rows = order.map(name=>{
+    const vals = hm.matrix[name] || [];
+    const cells = vals.map(v=>`<td style="background:${heatColor(v)}" title="${v!=null?v.toFixed(1)+'%':''}">${v!=null?Math.round(v):''}</td>`).join("");
+    return `<tr><td class="rowlabel">${name}</td>${cells}</tr>`;
+  }).join("");
+  document.getElementById("heatmap").innerHTML = thead + rows;
+}
+</script>
+</body>
+</html>
