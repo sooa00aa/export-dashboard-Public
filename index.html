@@ -200,6 +200,12 @@ document.getElementById("metaline").innerHTML =
 
 // ---- Insights (자동 생성) ----
 const order = DATA.order;
+// 받침 유무에 따라 조사를 고른다 ("승용차가" / "반도체는")
+function josa(word, withJong, withoutJong){
+  const c = (word || "").charCodeAt((word || "").length - 1);
+  const hangul = c >= 0xAC00 && c <= 0xD7A3;
+  return word + (hangul && (c - 0xAC00) % 28 !== 0 ? withJong : withoutJong);
+}
 function insightRank(field){
   return order
     .filter(name=>items[name] && items[name][field]!=null)
@@ -210,9 +216,47 @@ const byMomentum = insightRank("momentum");
 const insights = [];
 if(byMomentum.length){
   const top = byMomentum[0], bottom = byMomentum[byMomentum.length-1];
-  insights.push({tag:"가속", text:`<b>${top.name}</b>이 가장 강하게 가속 중입니다 (모멘텀 ${top.v>=0?"+":""}${top.v.toFixed(1)}pp).`});
-  insights.push({tag:"경계", text:`<b>${bottom.name}</b>은 최근 3구간 대비 직전 3구간에서 가장 둔화됐습니다 (모멘텀 ${bottom.v>=0?"+":""}${bottom.v.toFixed(1)}pp).`});
+  insights.push({tag:"가속", text:`<b>${top.name}</b>${josa(top.name,"이","가").slice(-1)} 가장 강하게 가속 중입니다 (모멘텀 ${top.v>=0?"+":""}${top.v.toFixed(1)}pp).`});
+  insights.push({tag:"경계", text:`<b>${bottom.name}</b>${josa(bottom.name,"은","는").slice(-1)} 최근 3구간 대비 직전 3구간에서 가장 둔화됐습니다 (모멘텀 ${bottom.v>=0?"+":""}${bottom.v.toFixed(1)}pp).`});
 }
+// 직전 구간과 비교 — 순위가 고정되면 "가속/경계"에 같은 품목이 계속 걸리므로
+// 구간 사이의 '변화'를 따로 뽑는다. 이전 구간 값은 heatmap.matrix 에 이미 있다.
+const HM = DATA.heatmap || {labels:[], matrix:{}};
+const LAST = (HM.labels || []).length - 1;
+const GOODS = order.filter(n => n !== "총계" && n !== "총계(반도체 제외)");  // 집계는 제외
+function yoyAt(name, idx){
+  const row = HM.matrix[name];
+  return (row && idx >= 0 && row[idx] != null) ? row[idx] : null;
+}
+function rankAt(idx){
+  const m = {};
+  GOODS.filter(n => yoyAt(n, idx) != null)
+       .map(n => ({n, v: yoyAt(n, idx)}))
+       .sort((a, b) => b.v - a.v)
+       .forEach((o, i) => { m[o.n] = i + 1; });
+  return m;
+}
+if(LAST >= 1){
+  const cur = rankAt(LAST), prev = rankAt(LAST - 1);
+  const moves = GOODS.filter(n => cur[n] && prev[n])
+                     .map(n => ({n, up: prev[n] - cur[n], from: prev[n], to: cur[n]}))
+                     .sort((a, b) => b.up - a.up);
+  if(moves.length && moves[0].up > 0){
+    const m = moves[0];
+    insights.push({tag:"순위상승", text:`<b>${m.n}</b>${josa(m.n,"이","가").slice(-1)} 직전 구간 대비 순위가 가장 많이 올랐습니다 (${m.from}위 → ${m.to}위, ${m.up}계단).`});
+  }
+  const flips = GOODS.map(n => ({n, a: yoyAt(n, LAST - 1), b: yoyAt(n, LAST)}))
+                     .filter(o => o.a != null && o.b != null && ((o.a < 0 && o.b >= 0) || (o.a >= 0 && o.b < 0)));
+  if(flips.length){
+    const toPlus = flips.filter(o => o.b >= 0).map(o => o.n);
+    const toMinus = flips.filter(o => o.b < 0).map(o => o.n);
+    const parts = [];
+    if(toPlus.length) parts.push(`<b>${toPlus.join(", ")}</b> 플러스 전환`);
+    if(toMinus.length) parts.push(`<b>${toMinus.join(", ")}</b> 마이너스 전환`);
+    insights.push({tag:"전환", text:`직전 구간 대비 YoY 부호가 바뀐 품목 — ${parts.join(" / ")}.`});
+  }
+}
+
 const semi = items["반도체"], exSemi = items["총계(반도체 제외)"];
 if(semi && exSemi && semi.recent_yoy!=null && exSemi.recent_yoy!=null){
   insights.push({tag:"쏠림", text:`반도체 최신구간 YoY <b>${semi.recent_yoy>=0?"+":""}${semi.recent_yoy.toFixed(1)}%</b> vs 반도체 제외 <b>${exSemi.recent_yoy>=0?"+":""}${exSemi.recent_yoy.toFixed(1)}%</b> — 격차가 ${Math.abs(semi.recent_yoy-exSemi.recent_yoy)>50?"크게 벌어져 있어 쏠림이 뚜렷합니다.":"크지 않아 반도체 외 품목도 견조합니다."}`});
